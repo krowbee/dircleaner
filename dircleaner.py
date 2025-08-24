@@ -1,16 +1,18 @@
 from send2trash import send2trash
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 import json
+import argparse
 
 BASE_DIR = Path(__file__).resolve().parent
 
 
 @dataclass 
 class Config:
-    path: Path = field(default=BASE_DIR / "config.json")
+    path: Path
 
     def __post_init__(self):
+        self.path = self.path.expanduser()
         if not self.path.is_file():
             raise FileNotFoundError("File not exists")
         
@@ -43,12 +45,17 @@ class DirCleaner:
 
             for file in d.iterdir():
                 if file.is_file() or file.is_dir():
-                    counter += 1
                     send2trash(file)
+                    counter += 1
         print(f"{counter} files was removed")
 
 
 if __name__ == "__main__":
-    config = Config()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", "-c", type=Path, default=BASE_DIR / "config.json")
+    args = parser.parse_args()
+
+    config = Config(path=args.config)
     dircleaner = DirCleaner(config)
     dircleaner.clean_dirs()
